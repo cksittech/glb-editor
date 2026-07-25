@@ -547,7 +547,7 @@ renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
       // 正射影: ヒット点がターゲットより奥（ドット積がターゲット距離より大きい）かどうか
       const depthHit    = toHit.dot(toTarget.clone().normalize());
       const depthTarget = toTarget.length();
-      dragSign = depthHit >= depthTarget ? -1 : 1;
+      dragSign = depthHit >= depthTarget ? 1 : -1;
     } else {
       dragSign = 1; // ヒットなし（背景クリック）はデフォルト
     }
@@ -573,8 +573,8 @@ renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
       camTarget.addScaledVector(up,     dy * panSpeed);
       updateCamera();
     } else {
-      // 水平ドラッグ → H スライダー (pivot Y回転)、手前/奥で符号反転
-      const newH = Math.max(-180, Math.min(180, parseFloat(hSlider.value) + dx * 0.4 * dragSign));
+      // 水平ドラッグ → H スライダー、手前/奥で符号反転
+      const newH = Math.max(-180, Math.min(180, parseFloat(hSlider.value) - dx * 0.4 * dragSign));
       hSlider.value = newH;
 
       // 垂直ドラッグ → V スライダー (仰角)
