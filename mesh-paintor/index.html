@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; }
+    #root { width: 100%; height: 100%; }
+    #controls {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10;
+    }
+    .ctrl-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0,0,0,0.6);
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: #ccc;
+      font: 12px/1.4 monospace;
+    }
+    .ctrl-row label { white-space: nowrap; }
+    .ctrl-row input[type=color] { width: 32px; height: 22px; padding: 0; border: none; cursor: pointer; background: none; }
+    .ctrl-row input[type=range] { width: 100px; }
+    .ctrl-row input[type=checkbox] { cursor: pointer; }
+    .flip-btn {
+      padding: 2px 10px;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background: #2a2a2a;
+      color: #aaa;
+      font: 12px monospace;
+      cursor: pointer;
+    }
+    .flip-btn.active {
+      background: #1a4a7a;
+      border-color: #4af;
+      color: #7cf;
+    }
+    #info {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(0,0,0,0.6);
+      color: #888;
+      font: 11px/1.4 monospace;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    canvas { display: block; }
+    #drop-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a1a;
+      color: #888;
+      font: 14px/2 monospace;
+      z-index: 100;
+      pointer-events: none;
+    }
+    #drop-overlay .icon { font-size: 48px; margin-bottom: 8px; }
+    #drop-overlay.hidden { display: none; }
+    #drop-overlay.dragover {
+      background: rgba(0, 100, 180, 0.35);
+      color: #7cf;
+      border: 3px dashed #4af;
+    }
+  </style>
+</head>
+<body>
+<div id="controls">
+  <div class="ctrl-row">
+    <label>メッシュ色</label>
+    <input type="color" id="strokeColor" value="#ffffff">
+    <label>背景色</label>
+    <input type="color" id="bgColor" value="#000000">
+    <label>ペイント色</label>
+    <input type="color" id="paintColor" value="#ffffff">
+  </div>
+  <div class="ctrl-row">
+    <label>線幅</label>
+    <input type="range" id="lineWidth" min="0.1" max="3" step="0.1" value="0.5">
+    <span id="lineWidthVal">0.5</span>
+  </div>
+  <div class="ctrl-row">
+    <label>不透明度</label>
+    <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.7">
+    <span id="opacityVal">0.7</span>
+  </div>
+  <div class="ctrl-row">
+    <label>塗りつぶし</label>
+    <input type="checkbox" id="fillMesh">
+    <input type="color" id="fillColor" value="#003355">
+  </div>
+  <div class="ctrl-row">
+    <label>反転</label>
+    <button id="flipH" class="flip-btn">左右</button>
+    <button id="flipV" class="flip-btn">上下</button>
+  </div>
+  <div class="ctrl-row">
+    <label>モード</label>
+    <button id="modeMove" class="flip-btn active">移動</button>
+    <button id="modePaint" class="flip-btn">ペイント</button>
+    <button id="modeErase" class="flip-btn">消去</button>
+  </div>
+  <div class="ctrl-row" style="color:#aaa; font-size:11px;">
+    ドラッグ: 移動 &nbsp;|&nbsp; ホイール: ズーム &nbsp;|&nbsp; Rキー: リセット
+  </div>
+</div>
+<div id="drop-overlay">
+  <div class="icon">&#128196;</div>
+  <div>JSONファイルをここにドロップ</div>
+  <div style="font-size:11px; color:#555;">uv_all_*.json</div>
+</div>
+<div id="info" style="display:none;"></div>
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const info = document.getElementById('info');
+const dropOverlay = document.getElementById('drop-overlay');
+
+// UI elements
+const strokeColorEl = document.getElementById('strokeColor');
+const bgColorEl = document.getElementById('bgColor');
+const paintColorEl = document.getElementById('paintColor');
+const lineWidthEl = document.getElementById('lineWidth');
+const lineWidthVal = document.getElementById('lineWidthVal');
+const opacityEl = document.getElementById('opacity');
+const opacityVal = document.getElementById('opacityVal');
+const fillMeshEl = document.getElementById('fillMesh');
+const fillColorEl = document.getElementById('fillColor');
+
+// View state
+let offsetX = 0, offsetY = 0, scale = 1;
+let flipH = false, flipV = false;
+let meshData = null;
+let totalTriangles = 0;
+let meshNames = [];
+// key: "meshIndex_triIndex" → color string
+const paintedTris = new Map();
+// アンドゥ履歴: 各エントリはストローク前のスナップショット Map
+const undoStack = [];
+const UNDO_LIMIT = 50;
+
+function snapshotPush() {
+  undoStack.push(new Map(paintedTris));
+  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  const prev = undoStack.pop();
+  paintedTris.clear();
+  prev.forEach((v, k) => paintedTris.set(k, v));
+  draw();
+}
+
+// モード: 'move' | 'paint' | 'erase'
+let currentMode = 'move';
+const modeBtns = {
+  move:  document.getElementById('modeMove'),
+  paint: document.getElementById('modePaint'),
+  erase: document.getElementById('modeErase'),
+};
+Object.entries(modeBtns).forEach(([mode, btn]) => {
+  btn.addEventListener('click', () => {
+    currentMode = mode;
+    Object.values(modeBtns).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    canvas.style.cursor = mode === 'move' ? 'default' : 'crosshair';
+  });
+});
+
+const flipHBtn = document.getElementById('flipH');
+const flipVBtn = document.getElementById('flipV');
+flipHBtn.addEventListener('click', () => { flipH = !flipH; flipHBtn.classList.toggle('active', flipH); draw(); });
+flipVBtn.addEventListener('click', () => { flipV = !flipV; flipVBtn.classList.toggle('active', flipV); draw(); });
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  draw();
+}
+
+function uvToCanvas(u, v) {
+  const s = Math.min(canvas.width, canvas.height) * 0.85;
+  const cx = (canvas.width - s) / 2;
+  const cy = (canvas.height - s) / 2;
+  const fu = flipH ? (1 - u) : u;
+  const fv = flipV ? (1 - v) : v;
+  return [
+    cx + fu * s * scale + offsetX,
+    cy + fv * s * scale + offsetY
+  ];
+}
+
+function loadMeshData(data) {
+  meshData = data;
+  totalTriangles = data.meshes.reduce((s, m) => s + m.triangles.length, 0);
+  meshNames = data.meshes.map(m => m.name);
+  info.textContent = `UDIM ${data.tile.udim} (U${data.tile.tu} V${data.tile.tv})  |  メッシュ数: ${data.meshes.length}  |  三角形数: ${totalTriangles.toLocaleString()}  |  ${meshNames.join(', ')}`;
+  info.style.display = '';
+  dropOverlay.classList.add('hidden');
+  scale = 1; offsetX = 0; offsetY = 0;
+  draw();
+}
+
+function draw() {
+  if (!meshData) return;
+
+  const bg = bgColorEl.value;
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const strokeColor = strokeColorEl.value;
+  const fillColor = fillColorEl.value;
+  const lw = parseFloat(lineWidthEl.value);
+  const alpha = parseFloat(opacityEl.value);
+  const doFill = fillMeshEl.checked;
+
+  // UV空間の境界ボックス（0~1の正方形）を薄く描画
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  const [bx0, by0] = uvToCanvas(0, 0);
+  const [bx1, by1] = uvToCanvas(1, 1);
+  ctx.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // ペイント済みトライアングルを先に塗る（ワイヤーフレームの下）
+  for (let mi = 0; mi < meshData.meshes.length; mi++) {
+    const mesh = meshData.meshes[mi];
+    for (let ti = 0; ti < mesh.triangles.length; ti++) {
+      const color = paintedTris.get(`${mi}_${ti}`);
+      if (!color) continue;
+      const tri = mesh.triangles[ti];
+      const [x0, y0] = uvToCanvas(tri.v0[0], tri.v0[1]);
+      const [x1, y1] = uvToCanvas(tri.v1[0], tri.v1[1]);
+      const [x2, y2] = uvToCanvas(tri.v2[0], tri.v2[1]);
+      ctx.beginPath();
+      ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+  }
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = lw;
+  ctx.strokeStyle = strokeColor;
+
+  for (const mesh of meshData.meshes) {
+    for (const tri of mesh.triangles) {
+      const [x0, y0] = uvToCanvas(tri.v0[0], tri.v0[1]);
+      const [x1, y1] = uvToCanvas(tri.v1[0], tri.v1[1]);
+      const [x2, y2] = uvToCanvas(tri.v2[0], tri.v2[1]);
+
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.closePath();
+
+      if (doFill) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// ドラッグ&ドロップでJSONロード
+window.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropOverlay.classList.remove('hidden');
+  dropOverlay.classList.add('dragover');
+});
+window.addEventListener('dragleave', e => {
+  if (e.relatedTarget === null) {
+    dropOverlay.classList.remove('dragover');
+    if (!meshData) dropOverlay.classList.remove('hidden');
+  }
+});
+window.addEventListener('drop', e => {
+  e.preventDefault();
+  dropOverlay.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (!file || !file.name.endsWith('.json')) {
+    dropOverlay.classList.remove('hidden');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      loadMeshData(data);
+    } catch (err) {
+      dropOverlay.classList.remove('hidden');
+      info.textContent = 'JSONのパースに失敗しました: ' + err.message;
+      info.style.display = '';
+    }
+  };
+  reader.readAsText(file);
+});
+
+// UI イベント
+[strokeColorEl, bgColorEl, fillColorEl, fillMeshEl].forEach(el => el.addEventListener('change', draw));
+lineWidthEl.addEventListener('input', () => { lineWidthVal.textContent = lineWidthEl.value; draw(); });
+opacityEl.addEventListener('input', () => { opacityVal.textContent = opacityEl.value; draw(); });
+
+// 点がトライアングル内にあるか判定（2Dクロス積）
+function pointInTriangle(px, py, x0, y0, x1, y1, x2, y2) {
+  const d0 = (px - x0) * (y1 - y0) - (py - y0) * (x1 - x0);
+  const d1 = (px - x1) * (y2 - y1) - (py - y1) * (x2 - x1);
+  const d2 = (px - x2) * (y0 - y2) - (py - y2) * (x0 - x2);
+  const hasNeg = d0 < 0 || d1 < 0 || d2 < 0;
+  const hasPos = d0 > 0 || d1 > 0 || d2 > 0;
+  return !(hasNeg && hasPos);
+}
+
+function hitTest(cx, cy) {
+  if (!meshData) return null;
+  for (let mi = 0; mi < meshData.meshes.length; mi++) {
+    const mesh = meshData.meshes[mi];
+    for (let ti = 0; ti < mesh.triangles.length; ti++) {
+      const tri = mesh.triangles[ti];
+      const [x0, y0] = uvToCanvas(tri.v0[0], tri.v0[1]);
+      const [x1, y1] = uvToCanvas(tri.v1[0], tri.v1[1]);
+      const [x2, y2] = uvToCanvas(tri.v2[0], tri.v2[1]);
+      if (pointInTriangle(cx, cy, x0, y0, x1, y1, x2, y2)) {
+        return `${mi}_${ti}`;
+      }
+    }
+  }
+  return null;
+}
+
+// パン & ペイント
+let dragging = false, dragStartX = 0, dragStartY = 0, dragOffX = 0, dragOffY = 0;
+let strokeDirty = false; // ストローク中に実際に変化があったか
+
+function applyPaint(cx, cy) {
+  const key = hitTest(cx, cy);
+  if (!key) return;
+  if (currentMode === 'paint') {
+    if (paintedTris.get(key) === paintColorEl.value) return;
+    paintedTris.set(key, paintColorEl.value);
+  } else {
+    if (!paintedTris.has(key)) return;
+    paintedTris.delete(key);
+  }
+  strokeDirty = true;
+  draw();
+}
+
+canvas.addEventListener('mousedown', e => {
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  dragOffX = offsetX;
+  dragOffY = offsetY;
+  dragging = true;
+  strokeDirty = false;
+  if (currentMode === 'paint' || currentMode === 'erase') {
+    snapshotPush(); // ストローク開始前にスナップショット
+    applyPaint(e.clientX, e.clientY);
+  }
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  if (currentMode === 'move') {
+    offsetX = dragOffX + (e.clientX - dragStartX);
+    offsetY = dragOffY + (e.clientY - dragStartY);
+    draw();
+  } else {
+    applyPaint(e.clientX, e.clientY);
+  }
+});
+window.addEventListener('mouseup', () => {
+  if (dragging && !strokeDirty && (currentMode === 'paint' || currentMode === 'erase')) {
+    // 何も変化しなかったストロークはスナップショットを捨てる
+    undoStack.pop();
+  }
+  dragging = false;
+});
+
+// ズーム（マウス位置中心）
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  const mx = e.clientX, my = e.clientY;
+  const s = Math.min(canvas.width, canvas.height) * 0.85;
+  const cx = (canvas.width - s) / 2;
+  const cy = (canvas.height - s) / 2;
+  // マウス位置を固定してズーム
+  offsetX = mx - (mx - offsetX - cx) * factor - cx;
+  offsetY = my - (my - offsetY - cy) * factor - cy;
+  scale *= factor;
+  draw();
+}, { passive: false });
+
+// ショートカット
+window.addEventListener('keydown', e => {
+  if (e.key === 'r' || e.key === 'R') {
+    scale = 1; offsetX = 0; offsetY = 0;
+    draw();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault();
+    undo();
+  }
+});
+
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>
