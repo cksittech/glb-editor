@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; }
+    canvas { display: block; }
+    #drop-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a1a;
+      color: #888;
+      font: 14px/2 monospace;
+      z-index: 100;
+      pointer-events: none;
+    }
+    #drop-overlay .icon { font-size: 48px; margin-bottom: 8px; }
+    #drop-overlay.hidden { display: none; }
+    #drop-overlay.dragover {
+      background: rgba(0, 100, 180, 0.35);
+      color: #7cf;
+      border: 3px dashed #4af;
+    }
+  </style>
+  <script src="../lib/react.min.js"></script>
+  <script src="../lib/react-dom.min.js"></script>
+  <script src="../lib/material-ui.min.js"></script>
+  <script src="../lib/babel.min.js"></script>
+</head>
+<body>
+
+<div id="drop-overlay">
+  <div class="icon">&#128196;</div>
+  <div>JSONファイルをここにドロップ</div>
+  <div style="font-size:11px; color:#555;">uv_all_*.json</div>
+</div>
+
+<div id="react-ui-root"></div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+// vanilla(Canvas)側とReact側を繋ぐブリッジ。
+// どちらのスクリプトよりも確実に先に評価される通常scriptとして定義する。
+window.PaintBridge = {
+  actions: {},
+  _setUiState: null,
+  setUiState(partial) {
+    if (window.PaintBridge._setUiState) window.PaintBridge._setUiState(partial);
+  },
+};
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+const {
+  ThemeProvider, createTheme, CssBaseline,
+  Button, IconButton, Stack, Paper, Box, Typography, Tooltip,
+  Slider, Checkbox, FormControlLabel, ToggleButton, ToggleButtonGroup,
+} = MaterialUI;
+
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: { paper: 'rgba(15, 15, 20, 0.9)' },
+    primary: { main: '#4299e1' },
+    secondary: { main: '#63b3ed' },
+  },
+  typography: { fontFamily: 'sans-serif' },
+});
+
+function ColorField({ label, value, onChange }) {
+  return (
+    <Stack direction="row" spacing={0.75} alignItems="center">
+      <Typography variant="caption" sx={{ color: '#a0aec0', whiteSpace: 'nowrap' }}>{label}</Typography>
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ width: 32, height: 22, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+      />
+    </Stack>
+  );
+}
+
+function ControlPanel({ ui, actions }) {
+  return (
+    <Paper
+      elevation={4}
+      sx={{
+        position: 'fixed', top: 12, left: 12, zIndex: 10,
+        p: 1.25, display: 'flex', flexDirection: 'column', gap: 1,
+        maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100vh - 24px)', overflow: 'auto',
+      }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+        <ColorField label="メッシュ色" value={ui.strokeColor} onChange={actions.setStrokeColor} />
+        <ColorField label="背景色" value={ui.bgColor} onChange={actions.setBgColor} />
+        <ColorField label="ペイント色" value={ui.paintColor} onChange={actions.setPaintColor} />
+      </Stack>
+
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <Typography variant="caption" sx={{ color: '#a0aec0', whiteSpace: 'nowrap', minWidth: 48 }}>線幅</Typography>
+        <Slider
+          size="small"
+          min={0.1} max={3} step={0.1}
+          value={ui.lineWidth}
+          onChange={(e, v) => actions.setLineWidth(v)}
+          sx={{ width: 100 }}
+        />
+        <Typography variant="caption" sx={{ color: '#718096', minWidth: 24 }}>{ui.lineWidth}</Typography>
+      </Stack>
+
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <Typography variant="caption" sx={{ color: '#a0aec0', whiteSpace: 'nowrap', minWidth: 48 }}>不透明度</Typography>
+        <Slider
+          size="small"
+          min={0.05} max={1} step={0.05}
+          value={ui.opacity}
+          onChange={(e, v) => actions.setOpacity(v)}
+          sx={{ width: 100 }}
+        />
+        <Typography variant="caption" sx={{ color: '#718096', minWidth: 24 }}>{ui.opacity}</Typography>
+      </Stack>
+
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <FormControlLabel
+          control={<Checkbox size="small" checked={ui.fillMesh} onChange={(e) => actions.setFillMesh(e.target.checked)} />}
+          label={<Typography variant="caption" sx={{ color: '#a0aec0' }}>塗りつぶし</Typography>}
+        />
+        <ColorField label="" value={ui.fillColor} onChange={actions.setFillColor} />
+      </Stack>
+
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <Typography variant="caption" sx={{ color: '#a0aec0', minWidth: 48 }}>反転</Typography>
+        <ToggleButton
+          size="small" value="h" selected={ui.flipH} onChange={actions.toggleFlipH}
+          sx={{ fontSize: 12, py: 0.25, px: 1.25 }}
+        >左右</ToggleButton>
+        <ToggleButton
+          size="small" value="v" selected={ui.flipV} onChange={actions.toggleFlipV}
+          sx={{ fontSize: 12, py: 0.25, px: 1.25 }}
+        >上下</ToggleButton>
+      </Stack>
+
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <Typography variant="caption" sx={{ color: '#a0aec0', minWidth: 48 }}>モード</Typography>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={ui.mode}
+          onChange={(e, v) => { if (v) actions.setMode(v); }}
+        >
+          <ToggleButton value="move" sx={{ fontSize: 12, py: 0.25, px: 1.25 }}>移動</ToggleButton>
+          <ToggleButton value="paint" sx={{ fontSize: 12, py: 0.25, px: 1.25 }}>ペイント</ToggleButton>
+          <ToggleButton value="erase" sx={{ fontSize: 12, py: 0.25, px: 1.25 }}>消去</ToggleButton>
+        </ToggleButtonGroup>
+      </Stack>
+
+      <Typography variant="caption" sx={{ color: '#aaa', fontSize: 11 }}>
+        ドラッグ: 移動 &nbsp;|&nbsp; ホイール: ズーム &nbsp;|&nbsp; Rキー: リセット
+      </Typography>
+
+      <Button
+        size="small"
+        variant="contained"
+        color="primary"
+        onClick={actions.download}
+        disabled={!ui.hasMesh}
+        sx={{ fontSize: 12 }}
+      >
+        PNGダウンロード (1024x1024)
+      </Button>
+    </Paper>
+  );
+}
+
+function InfoBar({ text }) {
+  if (!text) return null;
+  return (
+    <Paper
+      elevation={2}
+      sx={{
+        position: 'fixed', bottom: 12, left: 12, zIndex: 10,
+        px: 1.25, py: 0.75, bgcolor: 'rgba(0,0,0,0.6)',
+      }}
+    >
+      <Typography variant="caption" sx={{ color: '#888', fontFamily: 'monospace', fontSize: 11 }}>{text}</Typography>
+    </Paper>
+  );
+}
+
+function App() {
+  const [ui, setUi] = useState({
+    strokeColor: '#ffffff',
+    bgColor: '#000000',
+    paintColor: '#ffffff',
+    lineWidth: 0.5,
+    opacity: 0.7,
+    fillMesh: false,
+    fillColor: '#003355',
+    flipH: false,
+    flipV: false,
+    mode: 'move',
+    hasMesh: false,
+    infoText: '',
+  });
+
+  useEffect(() => {
+    window.PaintBridge._setUiState = (partial) => setUi((prev) => ({ ...prev, ...partial }));
+    return () => { window.PaintBridge._setUiState = null; };
+  }, []);
+
+  const actions = window.PaintBridge.actions;
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <ControlPanel
+        ui={ui}
+        actions={{
+          setStrokeColor: (v) => actions.setStrokeColor && actions.setStrokeColor(v),
+          setBgColor: (v) => actions.setBgColor && actions.setBgColor(v),
+          setPaintColor: (v) => actions.setPaintColor && actions.setPaintColor(v),
+          setLineWidth: (v) => actions.setLineWidth && actions.setLineWidth(v),
+          setOpacity: (v) => actions.setOpacity && actions.setOpacity(v),
+          setFillMesh: (v) => actions.setFillMesh && actions.setFillMesh(v),
+          setFillColor: (v) => actions.setFillColor && actions.setFillColor(v),
+          toggleFlipH: () => actions.toggleFlipH && actions.toggleFlipH(),
+          toggleFlipV: () => actions.toggleFlipV && actions.toggleFlipV(),
+          setMode: (v) => actions.setMode && actions.setMode(v),
+          download: () => actions.download && actions.download(),
+        }}
+      />
+      <InfoBar text={ui.infoText} />
+    </ThemeProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('react-ui-root')).render(<App />);
+</script>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dropOverlay = document.getElementById('drop-overlay');
+const bridge = window.PaintBridge;
+const setUiState = (partial) => bridge.setUiState(partial);
+
+// UI状態はReact側のstateを正として、vanilla側はこのローカル変数にミラーする
+let strokeColor = '#ffffff';
+let bgColor = '#000000';
+let paintColor = '#ffffff';
+let lineWidth = 0.5;
+let opacity = 0.7;
+let fillMesh = false;
+let fillColor = '#003355';
+
+// View state
+let offsetX = 0, offsetY = 0, scale = 1;
+let flipH = false, flipV = false;
+let meshData = null;
+let totalTriangles = 0;
+let meshNames = [];
+// key: "meshIndex_triIndex" → color string
+const paintedTris = new Map();
+// アンドゥ履歴: 各エントリはストローク前のスナップショット Map
+const undoStack = [];
+const UNDO_LIMIT = 50;
+
+function snapshotPush() {
+  undoStack.push(new Map(paintedTris));
+  if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  const prev = undoStack.pop();
+  paintedTris.clear();
+  prev.forEach((v, k) => paintedTris.set(k, v));
+  draw();
+}
+
+// モード: 'move' | 'paint' | 'erase'
+let currentMode = 'move';
+
+bridge.actions.setMode = (mode) => {
+  currentMode = mode;
+  setUiState({ mode });
+  canvas.style.cursor = mode === 'move' ? 'default' : 'crosshair';
+};
+bridge.actions.setStrokeColor = (v) => { strokeColor = v; setUiState({ strokeColor: v }); draw(); };
+bridge.actions.setBgColor = (v) => { bgColor = v; setUiState({ bgColor: v }); draw(); };
+bridge.actions.setPaintColor = (v) => { paintColor = v; setUiState({ paintColor: v }); };
+bridge.actions.setLineWidth = (v) => { lineWidth = v; setUiState({ lineWidth: v }); draw(); };
+bridge.actions.setOpacity = (v) => { opacity = v; setUiState({ opacity: v }); draw(); };
+bridge.actions.setFillMesh = (v) => { fillMesh = v; setUiState({ fillMesh: v }); draw(); };
+bridge.actions.setFillColor = (v) => { fillColor = v; setUiState({ fillColor: v }); draw(); };
+bridge.actions.toggleFlipH = () => { flipH = !flipH; setUiState({ flipH }); draw(); };
+bridge.actions.toggleFlipV = () => { flipV = !flipV; setUiState({ flipV }); draw(); };
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  draw();
+}
+
+function uvToCanvas(u, v) {
+  const s = Math.min(canvas.width, canvas.height) * 0.85;
+  const cx = (canvas.width - s) / 2;
+  const cy = (canvas.height - s) / 2;
+  const fu = flipH ? (1 - u) : u;
+  const fv = flipV ? (1 - v) : v;
+  return [
+    cx + fu * s * scale + offsetX,
+    cy + fv * s * scale + offsetY
+  ];
+}
+
+function loadMeshData(data) {
+  meshData = data;
+  totalTriangles = data.meshes.reduce((s, m) => s + m.triangles.length, 0);
+  meshNames = data.meshes.map(m => m.name);
+  setUiState({
+    hasMesh: true,
+    infoText: `UDIM ${data.tile.udim} (U${data.tile.tu} V${data.tile.tv})  |  メッシュ数: ${data.meshes.length}  |  三角形数: ${totalTriangles.toLocaleString()}  |  ${meshNames.join(', ')}`,
+  });
+  dropOverlay.classList.add('hidden');
+  scale = 1; offsetX = 0; offsetY = 0;
+  draw();
+}
+
+function draw() {
+  if (!meshData) return;
+
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const lw = lineWidth;
+  const alpha = opacity;
+  const doFill = fillMesh;
+
+  // UV空間の境界ボックス（0~1の正方形）を薄く描画
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  const [bx0, by0] = uvToCanvas(0, 0);
+  const [bx1, by1] = uvToCanvas(1, 1);
+  ctx.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // ペイント済みトライアングルを先に塗る（ワイヤーフレームの下）
+  for (let mi = 0; mi < meshData.meshes.length; mi++) {
+    const mesh = meshData.meshes[mi];
+    for (let ti = 0; ti < mesh.triangles.length; ti++) {
+      const color = paintedTris.get(`${mi}_${ti}`);
+      if (!color) continue;
+      const tri = mesh.triangles[ti];
+      const [x0, y0] = uvToCanvas(tri.v0[0], tri.v0[1]);
+      const [x1, y1] = uvToCanvas(tri.v1[0], tri.v1[1]);
+      const [x2, y2] = uvToCanvas(tri.v2[0], tri.v2[1]);
+      ctx.beginPath();
+      ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x2, y2);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+  }
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = lw;
+  ctx.strokeStyle = strokeColor;
+
+  for (const mesh of meshData.meshes) {
+    for (const tri of mesh.triangles) {
+      const [x0, y0] = uvToCanvas(tri.v0[0], tri.v0[1]);
+      const [x1, y1] = uvToCanvas(tri.v1[0], tri.v1[1]);
+      const [x2, y2] = uvToCanvas(tri.v2[0], tri.v2[1]);
+
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.closePath();
+
+      if (doFill) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// ドラッグ&ドロップでJSONロード
+window.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropOverlay.classList.remove('hidden');
+  dropOverlay.classList.add('dragover');
+});
+window.addEventListener('dragleave', e => {
+  if (e.relatedTarget === null) {
+    dropOverlay.classList.remove('dragover');
+    if (!meshData) dropOverlay.classList.remove('hidden');
+  }
+});
+window.addEventListener('drop', e => {
+  e.preventDefault();
+  dropOverlay.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (!file || !file.name.endsWith('.json')) {
+    dropOverlay.classList.remove('hidden');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      loadMeshData(data);
+    } catch (err) {
+      dropOverlay.classList.remove('hidden');
+      setUiState({ infoText: 'JSONのパースに失敗しました: ' + err.message });
+    }
+  };
+  reader.readAsText(file);
+});
+
+// 点がトライアングル内にあるか判定（2Dクロス積）
+function pointInTriangle(px, py, x0, y0, x1, y1, x2, y2) {
+  const d0 = (px - x0) * (y1 - y0) - (py - y0) * (x1 - x0);
+  const d1 = (px - x1) * (y2 - y1) - (py - y1) * (x2 - x1);
+  const d2 = (px - x2) * (y0 - y2) - (py - y2) * (x0 - x2);
+  const hasNeg = d0 < 0 || d1 < 0 || d2 < 0;
+  const hasPos = d0 > 0 || d1 > 0 || d2 > 0;
+  return !(hasNeg && hasPos);
+}
+
+function hitTest(cx, cy) {
+  if (!meshData) return null;
+  for (let mi = 0; mi < meshData.meshes.length; mi++) {
+    const mesh = meshData.meshes[mi];
+    for (let ti = 0; ti < mesh.triangles.length; ti++) {
+      const tri = mesh.triangles[ti];
+      const [x0, y0] = uvToCanvas(tri.v0[0], tri.v0[1]);
+      const [x1, y1] = uvToCanvas(tri.v1[0], tri.v1[1]);
+      const [x2, y2] = uvToCanvas(tri.v2[0], tri.v2[1]);
+      if (pointInTriangle(cx, cy, x0, y0, x1, y1, x2, y2)) {
+        return `${mi}_${ti}`;
+      }
+    }
+  }
+  return null;
+}
+
+// パン & ペイント
+let dragging = false, dragStartX = 0, dragStartY = 0, dragOffX = 0, dragOffY = 0;
+let strokeDirty = false; // ストローク中に実際に変化があったか
+
+function applyPaint(cx, cy) {
+  const key = hitTest(cx, cy);
+  if (!key) return;
+  if (currentMode === 'paint') {
+    if (paintedTris.get(key) === paintColor) return;
+    paintedTris.set(key, paintColor);
+  } else {
+    if (!paintedTris.has(key)) return;
+    paintedTris.delete(key);
+  }
+  strokeDirty = true;
+  draw();
+}
+
+canvas.addEventListener('mousedown', e => {
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  dragOffX = offsetX;
+  dragOffY = offsetY;
+  dragging = true;
+  strokeDirty = false;
+  if (currentMode === 'paint' || currentMode === 'erase') {
+    snapshotPush(); // ストローク開始前にスナップショット
+    applyPaint(e.clientX, e.clientY);
+  }
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  if (currentMode === 'move') {
+    offsetX = dragOffX + (e.clientX - dragStartX);
+    offsetY = dragOffY + (e.clientY - dragStartY);
+    draw();
+  } else {
+    applyPaint(e.clientX, e.clientY);
+  }
+});
+window.addEventListener('mouseup', () => {
+  if (dragging && !strokeDirty && (currentMode === 'paint' || currentMode === 'erase')) {
+    // 何も変化しなかったストロークはスナップショットを捨てる
+    undoStack.pop();
+  }
+  dragging = false;
+});
+
+// ズーム（マウス位置中心）
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  const mx = e.clientX, my = e.clientY;
+  const s = Math.min(canvas.width, canvas.height) * 0.85;
+  const cx = (canvas.width - s) / 2;
+  const cy = (canvas.height - s) / 2;
+  // マウス位置を固定してズーム
+  offsetX = mx - (mx - offsetX - cx) * factor - cx;
+  offsetY = my - (my - offsetY - cy) * factor - cy;
+  scale *= factor;
+  draw();
+}, { passive: false });
+
+// PNGダウンロード（1024x1024、UV空間をそのままピクセルにマッピング）
+bridge.actions.download = () => {
+  if (!meshData) return;
+
+  const SIZE = 1024;
+  const out = document.createElement('canvas');
+  out.width = SIZE;
+  out.height = SIZE;
+  const octx = out.getContext('2d');
+
+  octx.fillStyle = bgColor;
+  octx.fillRect(0, 0, SIZE, SIZE);
+
+  const doFill = fillMesh;
+
+  const uvToPixel = (u, v) => {
+    const fu = flipH ? (1 - u) : u;
+    const fv = flipV ? (1 - v) : v;
+    return [fu * SIZE, fv * SIZE];
+  };
+
+  // ペイント済みトライアングル
+  for (let mi = 0; mi < meshData.meshes.length; mi++) {
+    const mesh = meshData.meshes[mi];
+    for (let ti = 0; ti < mesh.triangles.length; ti++) {
+      const color = paintedTris.get(`${mi}_${ti}`);
+      if (!color) continue;
+      const tri = mesh.triangles[ti];
+      const [x0, y0] = uvToPixel(tri.v0[0], tri.v0[1]);
+      const [x1, y1] = uvToPixel(tri.v1[0], tri.v1[1]);
+      const [x2, y2] = uvToPixel(tri.v2[0], tri.v2[1]);
+      octx.beginPath();
+      octx.moveTo(x0, y0); octx.lineTo(x1, y1); octx.lineTo(x2, y2);
+      octx.closePath();
+      octx.fillStyle = color;
+      octx.fill();
+    }
+  }
+
+  octx.save();
+  octx.globalAlpha = opacity;
+  octx.lineWidth = lineWidth * (SIZE / (Math.min(canvas.width, canvas.height) * 0.85));
+  octx.strokeStyle = strokeColor;
+
+  for (const mesh of meshData.meshes) {
+    for (const tri of mesh.triangles) {
+      const [x0, y0] = uvToPixel(tri.v0[0], tri.v0[1]);
+      const [x1, y1] = uvToPixel(tri.v1[0], tri.v1[1]);
+      const [x2, y2] = uvToPixel(tri.v2[0], tri.v2[1]);
+
+      octx.beginPath();
+      octx.moveTo(x0, y0);
+      octx.lineTo(x1, y1);
+      octx.lineTo(x2, y2);
+      octx.closePath();
+
+      if (doFill) {
+        octx.fillStyle = fillColor;
+        octx.fill();
+      }
+      octx.stroke();
+    }
+  }
+  octx.restore();
+
+  out.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mesh-paint.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+};
+
+// ショートカット
+window.addEventListener('keydown', e => {
+  if (e.key === 'r' || e.key === 'R') {
+    scale = 1; offsetX = 0; offsetY = 0;
+    draw();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault();
+    undo();
+  }
+});
+
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>
