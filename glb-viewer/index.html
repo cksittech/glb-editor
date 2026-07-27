@@ -22,95 +22,29 @@
     }
     #drop-overlay.active { display: flex; }
 
-    #ui {
-      position: fixed;
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 10;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    #open-btn {
-      padding: 8px 20px;
-      background: #4299e1;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      font-family: sans-serif;
-    }
-    #open-btn:hover { background: #3182ce; }
-    #filename {
-      color: #a0aec0;
-      font-size: 13px;
-      font-family: sans-serif;
-      max-width: 300px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    #uv-btn {
-      position: fixed;
-      top: 16px;
-      left: 16px;
-      z-index: 10;
-      padding: 8px 14px;
-      background: #6b46c1;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      font-family: sans-serif;
-      display: none;
-    }
-    #uv-btn:hover { background: #553c9a; }
-
-    /* UV panel */
-    #uv-panel {
-      position: fixed;
-      top: 56px;
-      left: 16px;
-      z-index: 20;
-      background: rgba(15, 15, 30, 0.95);
-      border: 1px solid #4a5568;
-      border-radius: 8px;
-      padding: 10px;
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      font-family: sans-serif;
-    }
-    #uv-panel-header {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #a0aec0;
-      font-size: 12px;
-    }
-    #uv-mesh-select {
-      background: #2d3748;
-      color: #e2e8f0;
-      border: 1px solid #4a5568;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 12px;
-      flex: 1;
-    }
     #uv-canvas-wrap {
       position: relative;
       width: 256px;
       height: 256px;
+      max-width: 100%;
       background: #fff;
       border-radius: 4px;
-      overflow: hidden;
       cursor: pointer;
+      overflow: hidden;
+      min-width: 80px;
+      min-height: 80px;
     }
-    #uv-canvas { display: block; width: 256px; height: 256px; }
+    #uv-canvas { display: block; width: 100%; height: 100%; }
+    #uv-resize-handle {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 16px;
+      height: 16px;
+      cursor: nwse-resize;
+      background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.35) 50%);
+      z-index: 2;
+    }
     #uv-canvas-overlay {
       position: absolute;
       inset: 0;
@@ -127,74 +61,6 @@
       border-radius: 4px;
     }
     #uv-canvas-wrap:hover #uv-canvas-overlay { opacity: 1; }
-    #uv-tile-select-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #a0aec0;
-      font-size: 12px;
-    }
-    #uv-tile-select {
-      background: #2d3748;
-      color: #e2e8f0;
-      border: 1px solid #4a5568;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 12px;
-      flex: 1;
-    }
-    .uv-action-row {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .uv-select {
-      background: #2d3748;
-      color: #e2e8f0;
-      border: 1px solid #4a5568;
-      border-radius: 4px;
-      padding: 2px 6px;
-      font-size: 12px;
-    }
-    .uv-action-btn {
-      padding: 5px 10px;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      font-size: 12px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    #uv-dl-btn  { background: #2b6cb0; display: none; }
-    #uv-dl-btn:hover  { background: #2c5282; }
-    #uv-tex-btn { background: #276749; }
-    #uv-tex-btn:hover { background: #1c4532; }
-    #uv-close-btn {
-      background: none;
-      border: none;
-      color: #718096;
-      font-size: 14px;
-      cursor: pointer;
-      padding: 0 2px;
-      line-height: 1;
-      margin-left: auto;
-    }
-    #uv-close-btn:hover { color: #e2e8f0; }
-    #uv-info {
-      color: #718096;
-      font-size: 11px;
-      flex: 1;
-    }
-    #tex-status {
-      font-size: 11px;
-      color: #68d391;
-      min-height: 14px;
-    }
-    #uv-tile-count {
-      font-size: 11px;
-      color: #718096;
-    }
 
     #gizmo {
       position: fixed;
@@ -221,142 +87,259 @@
     #empty-state svg { opacity: 0.3; }
     #empty-state p { font-size: 16px; opacity: 0.6; }
     #empty-state small { font-size: 12px; opacity: 0.4; }
-
-    /* ---- スライダー共通 ---- */
-    .slider-wrap {
-      position: fixed;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: sans-serif;
-      font-size: 11px;
-      color: #a0aec0;
-      user-select: none;
-    }
-
-    /* 下部：水平回転 */
-    #h-wrap {
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      flex-direction: row;
-      width: min(480px, calc(100vw - 160px));
-    }
-    #h-wrap input[type=range] { flex: 1; }
-
-    /* 右側：垂直回転 */
-    #v-wrap {
-      right: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      flex-direction: column;
-      height: min(320px, calc(100vh - 160px));
-    }
-    #v-wrap input[type=range] {
-      flex: 1;
-      writing-mode: vertical-lr;
-      direction: rtl;
-    }
-
-    /* スライダースタイル */
-    input[type=range] {
-      -webkit-appearance: none;
-      appearance: none;
-      background: rgba(255,255,255,0.08);
-      border-radius: 4px;
-      outline: none;
-      cursor: pointer;
-    }
-    #h-wrap input[type=range] { height: 6px; }
-    #v-wrap input[type=range]  { width: 6px; }
-
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #4299e1;
-      cursor: pointer;
-      border: 2px solid #90cdf4;
-    }
-    input[type=range]::-webkit-slider-runnable-track {
-      background: rgba(99,179,237,0.25);
-      border-radius: 4px;
-    }
-
-    .slider-label { color: #63b3ed; font-weight: bold; font-size: 11px; }
-    .slider-val   { color: #718096; min-width: 36px; text-align: center; font-size: 11px; }
-    .reset-btn {
-      background: none;
-      border: 1px solid #4a5568;
-      border-radius: 4px;
-      color: #718096;
-      font-size: 10px;
-      padding: 2px 5px;
-      cursor: pointer;
-      line-height: 1;
-      flex-shrink: 0;
-    }
-    .reset-btn:hover { border-color: #63b3ed; color: #63b3ed; }
-
-    #cam-reset-all {
-      position: fixed;
-      bottom: 48px;
-      right: 12px;
-      background: rgba(26,26,46,0.85);
-      border: 1px solid #4a5568;
-      border-radius: 6px;
-      color: #718096;
-      font-size: 16px;
-      width: 30px;
-      height: 30px;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-    }
-    #cam-reset-all:hover { border-color: #63b3ed; color: #63b3ed; }
   </style>
+  <script src="../lib/react.min.js"></script>
+  <script src="../lib/react-dom.min.js"></script>
+  <script src="../lib/material-ui.min.js"></script>
+  <script src="../lib/babel.min.js"></script>
 </head>
 <body>
 
 <div id="drop-overlay">GLBファイルをドロップ</div>
 
-<div id="ui">
-  <button id="open-btn">ファイルを開く</button>
-  <span id="filename"></span>
-</div>
+<div id="react-ui-root"></div>
 
-<button id="uv-btn">UV Export</button>
+<script>
+// vanilla(Three.js)側とReact側を繋ぐブリッジ。
+// どちらのスクリプトよりも確実に先に評価される通常scriptとして定義する。
+window.GlbBridge = {
+  actions: {},          // vanilla側が実装を登録する関数群
+  _setUiState: null,    // React側の setState、vanilla側から呼ぶ
+  setUiState(partial) {
+    if (window.GlbBridge._setUiState) window.GlbBridge._setUiState(partial);
+  },
+};
+</script>
 
-<!-- UV展開パネル -->
-<div id="uv-panel">
-  <div id="uv-panel-header">
-    <span>UV Map</span>
-    <select id="uv-mesh-select"></select>
-    <button id="uv-close-btn">✕</button>
-  </div>
-  <div id="uv-tile-select-wrap">
-    <span>タイル</span>
-    <select id="uv-tile-select"></select>
-    <span id="uv-tile-count"></span>
-  </div>
-  <div id="uv-canvas-wrap">
-    <canvas id="uv-canvas" width="1024" height="1024"></canvas>
-    <div id="uv-canvas-overlay">クリックでダウンロード</div>
-  </div>
-  <div class="uv-action-row">
-    <button id="uv-dl-btn" class="uv-action-btn">UV ガイド保存（タイル別）</button>
-  </div>
-  <div class="uv-action-row">
-    <button id="uv-tex-btn" class="uv-action-btn">テクスチャ適用</button>
-    <span id="tex-status"></span>
-  </div>
-  <div id="uv-info"></div>
-</div>
-<input type="file" id="tex-input" accept="image/png,image/jpeg,image/webp" style="display:none">
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback } = React;
+const {
+  ThemeProvider, createTheme, CssBaseline,
+  Button, IconButton, Select, MenuItem, FormControl,
+  Slider, Stack, Paper, Box, Typography, Tooltip,
+} = MaterialUI;
+
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+    background: { paper: 'rgba(15, 15, 30, 0.95)' },
+    primary: { main: '#4299e1' },
+    secondary: { main: '#63b3ed' },
+  },
+  typography: { fontFamily: 'sans-serif' },
+});
+
+function TopBar({ filename, onOpen }) {
+  return (
+    <Stack
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      sx={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 10 }}
+    >
+      <Button variant="contained" size="small" onClick={onOpen}>ファイルを開く</Button>
+      <Typography
+        variant="body2"
+        sx={{ color: '#a0aec0', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+      >
+        {filename}
+      </Typography>
+    </Stack>
+  );
+}
+
+function UvPanel({ ui, actions }) {
+  if (!ui.uvPanelVisible) return null;
+  return (
+    <Paper
+      elevation={4}
+      sx={{
+        position: 'fixed', top: 16, left: 16, zIndex: 20,
+        p: 1.25, display: 'flex', flexDirection: 'column', gap: 1,
+        maxWidth: 'calc(100vw - 32px)', maxHeight: 'calc(100vh - 32px)', overflow: 'auto',
+      }}
+    >
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <Typography variant="caption" sx={{ color: '#a0aec0' }}>UV Map</Typography>
+        <FormControl size="small" sx={{ flex: 1, minWidth: 80 }}>
+          <Select
+            value={ui.uvMeshValue}
+            onChange={(e) => actions.selectUvMesh(e.target.value)}
+            sx={{ fontSize: 12, '& .MuiSelect-select': { py: 0.5 } }}
+          >
+            {ui.uvMeshOptions.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: 12 }}>{opt.label}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
+
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <Typography variant="caption" sx={{ color: '#a0aec0' }}>タイル</Typography>
+        <FormControl size="small" sx={{ flex: 1, minWidth: 80 }}>
+          <Select
+            value={ui.uvTileValue}
+            onChange={(e) => actions.selectUvTile(e.target.value)}
+            sx={{ fontSize: 12, '& .MuiSelect-select': { py: 0.5 } }}
+          >
+            {ui.uvTileOptions.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: 12 }}>{opt.label}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <Typography variant="caption" sx={{ color: '#718096' }}>{ui.uvTileCount}</Typography>
+      </Stack>
+
+      <div id="uv-canvas-wrap">
+        <canvas id="uv-canvas" width="1024" height="1024"></canvas>
+        <div id="uv-canvas-overlay">{ui.uvOverlayText}</div>
+        <div id="uv-resize-handle"></div>
+      </div>
+
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <Button
+          size="small"
+          variant="contained"
+          color="primary"
+          sx={{ display: ui.uvDlBtnVisible ? 'inline-flex' : 'none', fontSize: 12 }}
+        >
+          UV ガイド保存（タイル別）
+        </Button>
+      </Stack>
+
+      <Stack direction="row" spacing={0.75} alignItems="center">
+        <Button size="small" variant="contained" color="success" onClick={actions.openTexture} sx={{ fontSize: 12 }}>
+          テクスチャ適用
+        </Button>
+        <Typography variant="caption" sx={{ color: '#68d391' }}>{ui.texStatus}</Typography>
+      </Stack>
+
+      <Typography variant="caption" sx={{ color: '#718096' }}>{ui.uvInfo}</Typography>
+    </Paper>
+  );
+}
+
+function HSlider({ value, onChange, onReset }) {
+  return (
+    <Stack
+      direction="row"
+      spacing={0.75}
+      alignItems="center"
+      sx={{ position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 10, width: 'min(480px, calc(100vw - 160px))' }}
+    >
+      <Typography variant="caption" sx={{ color: '#63b3ed', fontWeight: 'bold' }}>H</Typography>
+      <Slider
+        size="small"
+        min={-180} max={180} step={1}
+        value={value}
+        onChange={(e, v) => onChange(v)}
+        sx={{ flex: 1 }}
+      />
+      <Typography variant="caption" sx={{ color: '#718096', minWidth: 36, textAlign: 'center' }}>{Math.round(value)}°</Typography>
+      <Tooltip title="リセット">
+        <IconButton size="small" onClick={onReset} sx={{ color: '#718096', border: '1px solid #4a5568', borderRadius: '4px', width: 22, height: 22 }}>
+          <span style={{ fontSize: 12 }}>↺</span>
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
+}
+
+function VSlider({ value, onChange, onReset }) {
+  return (
+    <Stack
+      spacing={0.75}
+      alignItems="center"
+      sx={{ position: 'fixed', right: 16, top: '50%', transform: 'translateY(-50%)', zIndex: 10, height: 'min(320px, calc(100vh - 160px))' }}
+    >
+      <Typography variant="caption" sx={{ color: '#63b3ed', fontWeight: 'bold' }}>V</Typography>
+      <Slider
+        size="small"
+        orientation="vertical"
+        min={-90} max={90} step={1}
+        value={value}
+        onChange={(e, v) => onChange(v)}
+        sx={{ flex: 1 }}
+      />
+      <Typography variant="caption" sx={{ color: '#718096', minWidth: 36, textAlign: 'center' }}>{Math.round(value)}°</Typography>
+      <Tooltip title="リセット">
+        <IconButton size="small" onClick={onReset} sx={{ color: '#718096', border: '1px solid #4a5568', borderRadius: '4px', width: 22, height: 22 }}>
+          <span style={{ fontSize: 12 }}>↺</span>
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
+}
+
+function CamResetAll({ visible, onClick }) {
+  if (!visible) return null;
+  return (
+    <Tooltip title="カメラをリセット">
+      <IconButton
+        onClick={onClick}
+        sx={{
+          position: 'fixed', bottom: 48, right: 12, zIndex: 20,
+          bgcolor: 'rgba(26,26,46,0.85)', border: '1px solid #4a5568', borderRadius: '6px',
+          color: '#718096', width: 30, height: 30,
+        }}
+      >
+        <span style={{ fontSize: 16 }}>⌂</span>
+      </IconButton>
+    </Tooltip>
+  );
+}
+
+function App() {
+  const [ui, setUi] = useState({
+    filename: '',
+    uvPanelVisible: false,
+    uvMeshOptions: [],
+    uvMeshValue: '',
+    uvTileOptions: [],
+    uvTileValue: '',
+    uvTileCount: '',
+    uvOverlayText: 'クリックでダウンロード',
+    uvDlBtnVisible: false,
+    uvInfo: '',
+    texStatus: '',
+    camResetVisible: false,
+    hDeg: 0,
+    vDeg: 30,
+  });
+
+  useEffect(() => {
+    window.GlbBridge._setUiState = (partial) => setUi((prev) => ({ ...prev, ...partial }));
+    return () => { window.GlbBridge._setUiState = null; };
+  }, []);
+
+  const actions = window.GlbBridge.actions;
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <TopBar filename={ui.filename} onOpen={() => actions.openFile && actions.openFile()} />
+      <UvPanel ui={ui} actions={{
+        selectUvMesh: (v) => actions.selectUvMesh && actions.selectUvMesh(v),
+        selectUvTile: (v) => actions.selectUvTile && actions.selectUvTile(v),
+        openTexture: () => actions.openTexture && actions.openTexture(),
+      }} />
+      <HSlider
+        value={ui.hDeg}
+        onChange={(v) => actions.setH && actions.setH(v)}
+        onReset={() => actions.resetH && actions.resetH()}
+      />
+      <VSlider
+        value={ui.vDeg}
+        onChange={(v) => actions.setV && actions.setV(v)}
+        onReset={() => actions.resetV && actions.resetV()}
+      />
+      <CamResetAll visible={ui.camResetVisible} onClick={() => actions.resetAllCam && actions.resetAllCam()} />
+    </ThemeProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('react-ui-root')).render(<App />);
+</script>
 
 <canvas id="gizmo" width="100" height="100"></canvas>
 
@@ -370,26 +353,8 @@
   <small>ボタンまたはドラッグ＆ドロップ</small>
 </div>
 
-<!-- 水平回転バー（下部） -->
-<div class="slider-wrap" id="h-wrap">
-  <span class="slider-label">H</span>
-  <input type="range" id="h-slider" min="-180" max="180" value="0" step="1">
-  <span class="slider-val" id="h-val">0°</span>
-  <button class="reset-btn" id="h-reset">↺</button>
-</div>
-
-<!-- 垂直回転バー（右側） -->
-<div class="slider-wrap" id="v-wrap">
-  <span class="slider-label">V</span>
-  <input type="range" id="v-slider" min="-90" max="90" value="30" step="1">
-  <span class="slider-val" id="v-val">0°</span>
-  <button class="reset-btn" id="v-reset">↺</button>
-</div>
-
-<!-- カメラ全体リセットボタン -->
-<button id="cam-reset-all" title="カメラをリセット">⌂</button>
-
 <input type="file" id="file-input" accept=".glb,.gltf" style="display:none">
+<input type="file" id="tex-input" accept="image/png,image/jpeg,image/webp" style="display:none">
 
 <script type="importmap">
 {
@@ -405,25 +370,15 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const emptyState  = document.getElementById('empty-state');
 const fileInput   = document.getElementById('file-input');
-const filenameEl  = document.getElementById('filename');
 const dropOverlay = document.getElementById('drop-overlay');
-const uvBtn       = document.getElementById('uv-btn');
-const uvPanel     = document.getElementById('uv-panel');
-const uvMeshSel   = document.getElementById('uv-mesh-select');
-const uvTileSel   = document.getElementById('uv-tile-select');
-const uvCanvasWrap= document.getElementById('uv-canvas-wrap');
-const uvCanvas    = document.getElementById('uv-canvas');
-const uvInfo      = document.getElementById('uv-info');
-const uvDlBtn     = document.getElementById('uv-dl-btn');
-const uvTexBtn    = document.getElementById('uv-tex-btn');
-const uvCloseBtn  = document.getElementById('uv-close-btn');
 const texInput    = document.getElementById('tex-input');
-const texStatus   = document.getElementById('tex-status');
 
-const hSlider = document.getElementById('h-slider');
-const vSlider = document.getElementById('v-slider');
-const hVal    = document.getElementById('h-val');
-const vVal    = document.getElementById('v-val');
+const bridge = window.GlbBridge;
+const setUiState = (partial) => bridge.setUiState(partial);
+
+// h-slider/v-slider相当の状態はReact側で表示、値はここで保持
+let hDeg = 0;
+let vDeg = 30;
 
 // --- Three.js setup ---
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -463,8 +418,6 @@ let camTarget = new THREE.Vector3(0, 0, 0);
 let initCamState = null;
 
 function updateCamera() {
-  const vDeg = parseFloat(vSlider.value);
-  const hDeg = parseFloat(hSlider.value);
   const phi   = vDeg * Math.PI / 180;
   const theta = hDeg * Math.PI / 180;
   // camTarget からの球面オフセット（pivot回転とは独立）
@@ -480,24 +433,22 @@ function updateCamera() {
 }
 
 function applyRotation() {
-  hVal.textContent = Math.round(parseFloat(hSlider.value)) + '°';
-  vVal.textContent = Math.round(parseFloat(vSlider.value)) + '°';
+  setUiState({ hDeg, vDeg });
   updateCamera();
 }
 
-hSlider.addEventListener('input', applyRotation);
-vSlider.addEventListener('input', applyRotation);
-
-document.getElementById('h-reset').addEventListener('click', () => { hSlider.value = 0; applyRotation(); });
-document.getElementById('v-reset').addEventListener('click', () => { vSlider.value = 30; applyRotation(); });
-document.getElementById('cam-reset-all').addEventListener('click', () => {
+bridge.actions.setH = (v) => { hDeg = v; applyRotation(); };
+bridge.actions.setV = (v) => { vDeg = v; applyRotation(); };
+bridge.actions.resetH = () => { hDeg = 0; applyRotation(); };
+bridge.actions.resetV = () => { vDeg = 30; applyRotation(); };
+bridge.actions.resetAllCam = () => {
   if (!initCamState) return;
   camRadius = initCamState.radius;
   camTarget.copy(initCamState.target);
-  hSlider.value = initCamState.h;
-  vSlider.value = initCamState.v;
+  hDeg = initCamState.h;
+  vDeg = initCamState.v;
   applyRotation();
-});
+};
 
 applyRotation();
 renderer.domElement.addEventListener('wheel', (e) => {
@@ -510,6 +461,7 @@ renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 // --- drag to orbit ---
 {
   let dragging = false;
+  let panDrag = false; // 右クリックドラッグ時は常にパン扱い
   let lastX = 0, lastY = 0;
   let dragSign = 1; // 掴んだ点が手前なら+1、奥なら-1
 
@@ -517,9 +469,10 @@ renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
   const _ndc = new THREE.Vector2();
 
   renderer.domElement.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 && e.button !== 2) return;
     if (e.target !== renderer.domElement) return;
     dragging = true;
+    panDrag = (e.button === 2);
     lastX = e.clientX;
     lastY = e.clientY;
     renderer.domElement.setPointerCapture(e.pointerId);
@@ -560,8 +513,8 @@ renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
     lastX = e.clientX;
     lastY = e.clientY;
 
-    if (e.shiftKey) {
-      // Shift+ドラッグ: カメラ平面に沿ってパン
+    if (e.shiftKey || panDrag) {
+      // Shift+ドラッグ、または右クリックドラッグ: カメラ平面に沿ってパン
       const panSpeed = camRadius * 0.001;
       // カメラの右方向・上方向ベクトルを取得
       const right = new THREE.Vector3();
@@ -574,18 +527,16 @@ renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
       updateCamera();
     } else {
       // 水平ドラッグ → H スライダー、手前/奥で符号反転
-      const newH = Math.max(-180, Math.min(180, parseFloat(hSlider.value) - dx * 0.4 * dragSign));
-      hSlider.value = newH;
+      hDeg = Math.max(-180, Math.min(180, hDeg - dx * 0.4 * dragSign));
 
       // 垂直ドラッグ → V スライダー (仰角)
-      const newV = Math.max(-90, Math.min(90, parseFloat(vSlider.value) + dy * 0.3));
-      vSlider.value = newV;
+      vDeg = Math.max(-90, Math.min(90, vDeg + dy * 0.3));
 
       applyRotation();
     }
   });
 
-  const stopDrag = () => { dragging = false; };
+  const stopDrag = () => { dragging = false; panDrag = false; };
   renderer.domElement.addEventListener('pointerup', stopDrag);
   renderer.domElement.addEventListener('pointercancel', stopDrag);
 }
@@ -634,19 +585,28 @@ function loadGLB(arrayBuffer, name) {
     camTarget.set(0, modelH * 0.5, 0);
 
     // スライダーリセット（V=+30が初期仰角）
-    hSlider.value = 0; vSlider.value = 30; applyRotation();
+    hDeg = 0; vDeg = 30; applyRotation();
 
     // 初期カメラ状態を保存
     initCamState = { radius: camRadius, target: camTarget.clone(), h: 0, v: 30 };
-    document.getElementById('cam-reset-all').style.display = 'flex';
+    setUiState({ camResetVisible: true });
 
     emptyState.style.display = 'none';
-    filenameEl.textContent = name;
+    setUiState({ filename: name, uvPanelVisible: true });
 
-    // UV Export ボタンを有効化
-    buildUvMeshList(model);
-    uvBtn.style.display = 'block';
-    uvPanel.style.display = 'none';
+    // UV Map パネルを常時表示
+    // uv-canvas 等はuvPanelVisible=trueのReact再レンダー後にDOMへ生成される。
+    // rAF1回だけだとReactのコミットより先に発火することがあるため、
+    // 実際にDOMへ現れるまでフレーム単位でリトライする
+    const waitForUvCanvas = () => {
+      if (document.getElementById('uv-canvas')) {
+        buildUvMeshList(model);
+        updateTileSelect();
+      } else {
+        requestAnimationFrame(waitForUvCanvas);
+      }
+    };
+    requestAnimationFrame(waitForUvCanvas);
   }, (err) => alert('読み込みエラー: ' + err.message));
 }
 
@@ -658,7 +618,7 @@ function handleFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
-document.getElementById('open-btn').addEventListener('click', () => fileInput.click());
+bridge.actions.openFile = () => fileInput.click();
 fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
 document.addEventListener('dragover', (e) => { e.preventDefault(); dropOverlay.classList.add('active'); });
 document.addEventListener('dragleave', (e) => { if (!e.relatedTarget) dropOverlay.classList.remove('active'); });
@@ -731,10 +691,10 @@ function drawGizmo() {
 
 // --- UV Export / Texture Import ---
 let uvMeshes = [];  // { name, mesh }
+let uvMeshValue = 'all'; // 'all' または index文字列
 
 function buildUvMeshList(model) {
   uvMeshes = [];
-  uvMeshSel.innerHTML = '';
   model.traverse((obj) => {
     if (!obj.isMesh) return;
     const uv = obj.geometry.attributes.uv || obj.geometry.attributes.uv1;
@@ -749,21 +709,22 @@ function buildUvMeshList(model) {
     });
   }
 
-  if (uvMeshes.length > 1) {
-    const all = document.createElement('option');
-    all.value = 'all'; all.textContent = 'All';
-    uvMeshSel.appendChild(all);
-  }
+  const options = [];
+  if (uvMeshes.length > 1) options.push({ value: 'all', label: 'All' });
   for (let i = 0; i < uvMeshes.length; i++) {
-    const opt = document.createElement('option');
-    opt.value = i; opt.textContent = uvMeshes[i].name;
-    uvMeshSel.appendChild(opt);
+    options.push({ value: String(i), label: uvMeshes[i].name });
   }
-  if (uvMeshes.length > 1) uvMeshSel.value = 'all';
+  uvMeshValue = uvMeshes.length > 1 ? 'all' : (uvMeshes.length ? '0' : '');
 
-  texStatus.textContent = '';
+  setUiState({ uvMeshOptions: options, uvMeshValue, texStatus: '' });
   updateTileSelect();
 }
+
+bridge.actions.selectUvMesh = (value) => {
+  uvMeshValue = value;
+  setUiState({ uvMeshValue: value });
+  updateTileSelect();
+};
 
 function calcUvBounds(entries) {
   let uMin = Infinity, uMax = -Infinity, vMin = Infinity, vMax = -Infinity;
@@ -865,11 +826,11 @@ function renderTileGuide(entries, tu, tv) {
 
 // プレビュー用（暗背景＋カラー線）
 function drawUv() {
-  const selVal = uvMeshSel.value;
-  const entries = selVal === 'all' ? uvMeshes : [uvMeshes[parseInt(selVal) || 0]].filter(Boolean);
+  const entries = getSelectedEntries();
 
-  const ctx = uvCanvas.getContext('2d');
-  const W = uvCanvas.width, H = uvCanvas.height;
+  const uvCanvasEl = document.getElementById('uv-canvas');
+  const ctx = uvCanvasEl.getContext('2d');
+  const W = uvCanvasEl.width, H = uvCanvasEl.height;
 
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#1a1a2e';
@@ -879,7 +840,7 @@ function drawUv() {
     ctx.fillStyle = '#718096'; ctx.font = `${H/20}px sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('UV なし', W/2, H/2);
-    uvInfo.textContent = ''; return;
+    setUiState({ uvInfo: '' }); return;
   }
 
   const { uMin, uMax, vMin, vMax } = calcUvBounds(entries);
@@ -946,7 +907,7 @@ function drawUv() {
     totalVerts += uvAttr.count;
   });
 
-  uvInfo.textContent = `U[${uMin.toFixed(2)}~${uMax.toFixed(2)}] V[${vMin.toFixed(2)}~${vMax.toFixed(2)}]  ${totalVerts} verts / ${Math.round(totalTris)} tris`;
+  setUiState({ uvInfo: `U[${uMin.toFixed(2)}~${uMax.toFixed(2)}] V[${vMin.toFixed(2)}~${vMax.toFixed(2)}]  ${totalVerts} verts / ${Math.round(totalTris)} tris` });
 }
 
 // 指定タイルのUVを持つメッシュを選択エントリから返す
@@ -1074,7 +1035,7 @@ function applyTexture(imageElement) {
     const { tu, tv } = tile;
     const mat = makeUdimShaderMat(imageElement, [{ tu, tv, idx: 0 }]);
     getMeshesForTile(entries, tu, tv).forEach(({ mesh }) => { mesh.material = mat; });
-    texStatus.textContent = `適用済み ✓ (UDIM ${1001 + tu + tv * 10})`;
+    setUiState({ texStatus: `適用済み ✓ (UDIM ${1001 + tu + tv * 10})` });
   } else {
     // All結合PNG: 全タイルを1つのシェーダーでマッピング
     const allTiles = listUvTiles(entries);
@@ -1082,59 +1043,116 @@ function applyTexture(imageElement) {
     const mat = makeUdimShaderMat(imageElement, tileList);
     // 全メッシュに同一マテリアルを適用（シェーダー内でタイルを振り分ける）
     entries.forEach(({ mesh }) => { mesh.material = mat; });
-    texStatus.textContent = `適用済み ✓ (全${allTiles.length}タイル)`;
+    setUiState({ texStatus: `適用済み ✓ (全${allTiles.length}タイル)` });
   }
 }
 
 function getSelectedEntries() {
-  const selVal = uvMeshSel.value;
-  return selVal === 'all' ? uvMeshes : [uvMeshes[parseInt(selVal) || 0]].filter(Boolean);
+  return uvMeshValue === 'all' ? uvMeshes : [uvMeshes[parseInt(uvMeshValue) || 0]].filter(Boolean);
 }
+
+let uvTileValue = ''; // 'all' またはタイル座標文字列 "tu,tv"
+
+bridge.actions.selectUvTile = (value) => {
+  uvTileValue = value;
+  setUiState({ uvTileValue: value, uvOverlayText: value === 'all' ? 'クリックで全タイルDL' : 'クリックでダウンロード' });
+  drawTilePreview();
+};
 
 function updateTileSelect() {
   const entries = getSelectedEntries();
   const tiles = listUvTiles(entries);
-  const el = document.getElementById('uv-tile-count');
-  if (el) el.textContent = `${tiles.length} タイル`;
 
-  const prev = uvTileSel.value;
-  uvTileSel.innerHTML = '';
-
-  if (tiles.length > 1) {
-    const allOpt = document.createElement('option');
-    allOpt.value = 'all';
-    allOpt.textContent = `All  (${tiles.length} タイル)`;
-    uvTileSel.appendChild(allOpt);
-  }
-
+  const options = [];
+  if (tiles.length > 1) options.push({ value: 'all', label: `All  (${tiles.length} タイル)` });
   tiles.forEach(({ tu, tv }) => {
     const udim = 1001 + tu + tv * 10;
-    const opt = document.createElement('option');
-    opt.value = `${tu},${tv}`;
-    opt.textContent = `UDIM ${udim}  (u${tu} v${tv})`;
-    uvTileSel.appendChild(opt);
+    options.push({ value: `${tu},${tv}`, label: `UDIM ${udim}  (u${tu} v${tv})` });
   });
 
-  // 前の選択を復元、なければ先頭
-  if ([...uvTileSel.options].some(o => o.value === prev)) uvTileSel.value = prev;
+  // 前の選択を復元、なければ先頭タイル（Allではなく個別タイル）を選択
+  if (!options.some(o => o.value === uvTileValue)) {
+    uvTileValue = tiles.length > 0 ? `${tiles[0].tu},${tiles[0].tv}` : '';
+  }
 
-  const ovl = document.getElementById('uv-canvas-overlay');
-  if (ovl) ovl.textContent = uvTileSel.value === 'all' ? 'クリックで全タイルDL' : 'クリックでダウンロード';
+  setUiState({
+    uvTileOptions: options,
+    uvTileValue,
+    uvTileCount: `${tiles.length} タイル`,
+    uvOverlayText: uvTileValue === 'all' ? 'クリックで全タイルDL' : 'クリックでダウンロード',
+  });
 
   drawTilePreview();
 }
 
 // 'all' のとき null を返す（全タイル扱い）、それ以外は {tu, tv}
 function getSelectedTile() {
-  const val = uvTileSel.value;
-  if (!val || val === 'all') return null;
-  const [tu, tv] = val.split(',').map(Number);
+  if (!uvTileValue || uvTileValue === 'all') return null;
+  const [tu, tv] = uvTileValue.split(',').map(Number);
   return { tu, tv };
 }
+
+const UV_TILE_PX = 256; // 1タイルあたりの表示基準サイズ(px)
+let uvWrapUserResized = false; // ユーザーがドラッグでリサイズ済みか
+let uvJustResized = false; // リサイズ操作直後のclickをダウンロードとして扱わないためのフラグ
+
+// 専用ハンドルのドラッグで幅を変更し、アスペクト比を保って高さを追従させる
+// UVパネルはReactが描画するため、ハンドル要素はイベント委譲で取得する
+// (uv-resize-handleのクリックは下のダウンロード用リスナーより先にstopImmediatePropagationで止める)
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'uv-resize-handle') e.stopImmediatePropagation();
+});
+document.addEventListener('pointerdown', (e) => {
+  if (!e.target || e.target.id !== 'uv-resize-handle') return;
+  e.preventDefault();
+  e.stopPropagation();
+  const uvCanvasWrap = document.getElementById('uv-canvas-wrap');
+  const startX = e.clientX;
+  const startW = uvCanvasWrap.getBoundingClientRect().width;
+  const ar = uvCanvasWrap.dataset.aspect ? Number(uvCanvasWrap.dataset.aspect) : 1;
+  function onMove(ev) {
+    uvWrapUserResized = true;
+    uvJustResized = true;
+    const w = Math.max(80, startW + (ev.clientX - startX));
+    uvCanvasWrap.style.width  = `${w}px`;
+    uvCanvasWrap.style.height = `${w / ar}px`;
+  }
+  function onUp() {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    setTimeout(() => { uvJustResized = false; }, 0);
+  }
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+});
 
 function drawTilePreview() {
   const tile = getSelectedTile();
   const entries = getSelectedEntries();
+  const uvCanvas = document.getElementById('uv-canvas');
+  const uvCanvasWrap = document.getElementById('uv-canvas-wrap');
+  if (!uvCanvas || !uvCanvasWrap) return;
+
+  // タイルグリッドの列数・行数に合わせてCanvasの内部解像度・アスペクト比を調整
+  let cols = 1, rows = 1;
+  if (!tile) {
+    const tilesForSize = listUvTiles(entries);
+    const tuList = tilesForSize.map(t => t.tu), tvList = tilesForSize.map(t => t.tv);
+    cols = Math.max(1, (tuList.length ? Math.max(...tuList) - Math.min(...tuList) : 0) + 1);
+    rows = Math.max(1, (tvList.length ? Math.max(...tvList) - Math.min(...tvList) : 0) + 1);
+  }
+  uvCanvas.width  = UV_TILE_PX * 4 * cols;
+  uvCanvas.height = UV_TILE_PX * 4 * rows;
+  uvCanvasWrap.dataset.aspect = cols / rows;
+
+  if (!uvWrapUserResized) {
+    // 自動サイズ: 画面内に収まる幅を基準タイルサイズから算出
+    const maxW = Math.min(window.innerWidth - 48, UV_TILE_PX * 4 * cols);
+    const w = Math.min(UV_TILE_PX * cols, maxW);
+    uvCanvasWrap.style.width  = `${w}px`;
+    uvCanvasWrap.style.height = `${w * rows / cols}px`;
+  }
+
   const ctx = uvCanvas.getContext('2d');
   const W = uvCanvas.width, H = uvCanvas.height;
   ctx.clearRect(0, 0, W, H);
@@ -1148,7 +1166,7 @@ function drawTilePreview() {
   ];
 
   if (!tile) {
-    // All: 全タイルをUV座標系全体にフィットして表示
+    // All: Canvas自体がタイルグリッドの縦横比に合わせてあるため、そのままフィットさせれば各タイルは正方形になる
     const { uMin, uMax, vMin, vMax } = calcUvBounds(entries);
     const uRange = uMax - uMin, vRange = vMax - vMin;
     ctx.fillStyle = '#1a1a2e';
@@ -1199,7 +1217,7 @@ function drawTilePreview() {
       else { for (let i=0;i<uvAttr.count;i+=3) tri(i,i+1,i+2); }
     });
 
-    uvInfo.textContent = `U[${uMin.toFixed(2)}~${uMax.toFixed(2)}] V[${vMin.toFixed(2)}~${vMax.toFixed(2)}]  全${tiles.length}タイル`;
+    setUiState({ uvInfo: `U[${uMin.toFixed(2)}~${uMax.toFixed(2)}] V[${vMin.toFixed(2)}~${vMax.toFixed(2)}]  全${tiles.length}タイル` });
     return;
   }
 
@@ -1247,20 +1265,8 @@ function drawTilePreview() {
   });
 
   const udim = 1001 + tu + tv * 10;
-  uvInfo.textContent = `UDIM ${udim}  U[${tu}~${tu+1}] V[${tv}~${tv+1}]`;
+  setUiState({ uvInfo: `UDIM ${udim}  U[${tu}~${tu+1}] V[${tv}~${tv+1}]` });
 }
-
-uvBtn.addEventListener('click', () => {
-  uvPanel.style.display = uvPanel.style.display === 'flex' ? 'none' : 'flex';
-  if (uvPanel.style.display === 'flex') { updateTileSelect(); }
-});
-uvCloseBtn.addEventListener('click', () => { uvPanel.style.display = 'none'; });
-uvMeshSel.addEventListener('change', () => { updateTileSelect(); });
-uvTileSel.addEventListener('change', () => {
-  drawTilePreview();
-  const ovl = document.getElementById('uv-canvas-overlay');
-  if (ovl) ovl.textContent = uvTileSel.value === 'all' ? `クリックで全タイルDL` : 'クリックでダウンロード';
-});
 
 // タイルのUVデータをJSON形式で生成
 function buildTileJson(entries, tu, tv) {
@@ -1308,12 +1314,14 @@ function downloadJson(obj, filename) {
 }
 
 // キャンバスクリックで選択タイルをダウンロード（All選択時は全タイル順次DL）
-uvCanvasWrap.addEventListener('click', () => {
+document.addEventListener('click', (e) => {
+  const uvCanvasWrap = document.getElementById('uv-canvas-wrap');
+  if (!uvCanvasWrap || !uvCanvasWrap.contains(e.target)) return;
+  if (uvJustResized) return;
   const tile = getSelectedTile();
   const entries = getSelectedEntries();
-  const selVal = uvMeshSel.value;
-  const label = selVal === 'all' ? 'all'
-    : (uvMeshes[parseInt(selVal)] || { name: 'uv' }).name.replace(/[^a-zA-Z0-9_\-]/g, '_');
+  const label = uvMeshValue === 'all' ? 'all'
+    : (uvMeshes[parseInt(uvMeshValue)] || { name: 'uv' }).name.replace(/[^a-zA-Z0-9_\-]/g, '_');
 
   if (!tile) {
     // All: 全タイルを横並びで1枚のPNGとして出力 + 全タイル分JSONも出力
@@ -1337,8 +1345,8 @@ uvCanvasWrap.addEventListener('click', () => {
     setTimeout(() => {
       downloadJson(allJson, `uv_${label}_all_${tiles.length}tiles.json`);
     }, 200);
-    texStatus.textContent = `保存: 全${tiles.length}タイル結合`;
-    setTimeout(() => { texStatus.textContent = ''; }, 1500);
+    setUiState({ texStatus: `保存: 全${tiles.length}タイル結合` });
+    setTimeout(() => { setUiState({ texStatus: '' }); }, 1500);
     return;
   }
 
@@ -1353,11 +1361,11 @@ uvCanvasWrap.addEventListener('click', () => {
   setTimeout(() => {
     downloadJson(buildTileJson(entries, tu, tv), `uv_${label}_${udim}_u${tu}v${tv}.json`);
   }, 200);
-  texStatus.textContent = `保存: UDIM ${udim}`;
-  setTimeout(() => { texStatus.textContent = ''; }, 1500);
+  setUiState({ texStatus: `保存: UDIM ${udim}` });
+  setTimeout(() => { setUiState({ texStatus: '' }); }, 1500);
 });
 
-uvTexBtn.addEventListener('click', () => { texInput.value = ''; texInput.click(); });
+bridge.actions.openTexture = () => { texInput.value = ''; texInput.click(); };
 texInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
